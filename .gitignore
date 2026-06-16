@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+venv/
+env/
+
+# Local data and generated outputs
+data/*.csv
+data/*.xlsx
+data/*.xls
+outputs/*
+!outputs/README.md

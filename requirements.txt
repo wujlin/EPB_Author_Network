@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy>=1.24
+networkx>=3.0
+matplotlib>=3.7
+seaborn>=0.12
+pillow>=10.0
+python-louvain>=0.16
+playwright>=1.40
