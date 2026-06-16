@@ -15,3 +15,9 @@ The CSV should include at least:
 - `authors`
 - `authors_full_final`
 - `doi`
+
+Optional quality-tracking columns are used when present:
+
+- `authors_source_final`
+- `paper_needs_review`
+- `paper_review_reason`

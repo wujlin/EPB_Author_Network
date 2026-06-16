@@ -32,10 +32,10 @@ BERTopic topic modeling workflow.
 
 ## Manuscript Workflow Map
 
-| Manuscript analysis item | Code path | Main output |
+| Manuscript analysis item | Code path | Main output inside `outputs/network_analysis_run/` |
 | --- | --- | --- |
 | Cleaned author data input | `data/output_final_with_source_revised_cleaned_authorfix.csv` | Input CSV, not stored in this repository |
-| Author collaboration network construction | `scripts/run_network_analysis.py`, `RevisedCSVNetworkBuilder.build_collaboration_network()` | `outputs/network_analysis_run/metrics/network_analysis_summary.json` |
+| Author collaboration network construction | `scripts/run_network_analysis.py`, `RevisedCSVNetworkBuilder.build_collaboration_network()` | `metrics/network_analysis_summary.json` |
 | Weighted edge definition and weighted degree analysis | `scripts/run_network_analysis.py`, `weighted_degree()`, `NetworkAnalyzer.analyze_weighted_degree_distribution_detailed()` | `figures/03-weighted-degree-analysis.png`, `tables/top_authors_by_weighted_degree.csv` |
 | Full network and LCC structural diagnostics | `scripts/run_network_analysis.py`, `create_author_network_structural_plot()` | `figures/08-structural-analysis.png` |
 | Small-world and path-length analysis on the LCC | `scripts/run_network_analysis.py`, `render_small_world_clean()` | `figures/14-small-world-largest-component.png`, summary JSON |
