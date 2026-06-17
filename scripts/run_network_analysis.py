@@ -742,24 +742,7 @@ def render_community_decade_evolution_clean(
 ) -> None:
     decades = ["1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]
     communities = list(temporal_results.get("target_communities", []))
-    partition = temporal_results.get("current_communities", {}).get("partition", {})
-    weighted_degrees = {node: weighted_degree(graph, node) for node in graph.nodes()}
-
-    labels = []
-    for community_id in communities:
-        members = [node for node, cid in partition.items() if cid == community_id and node in graph]
-        if members:
-            leader = max(
-                members,
-                key=lambda node: (
-                    weighted_degrees.get(node, 0.0),
-                    graph.nodes[node].get("paper_count", 0),
-                    node,
-                ),
-            )
-            labels.append(f"C{community_id}: {display_surname(leader)}")
-        else:
-            labels.append(f"C{community_id}")
+    labels = [f"C{community_id}" for community_id in communities]
 
     rows = []
     for community_index, community_id in enumerate(communities):
