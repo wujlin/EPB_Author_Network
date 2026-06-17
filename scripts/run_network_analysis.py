@@ -790,10 +790,10 @@ def render_community_decade_evolution_clean(
     ):
         fig, axes = plt.subplots(1, 2, figsize=(13.8, 5.7), constrained_layout=True)
         panel_specs = [
-            ("active_members", "a. Active members over time", "Active members", "Oranges"),
-            ("papers", "b. Papers published over time", "Papers published", "Blues"),
+            ("active_members", "The Number of Active Members", "Oranges"),
+            ("papers", "The Number of Paper Published", "Blues"),
         ]
-        for ax, (column, title, colorbar_label, cmap) in zip(axes, panel_specs):
+        for ax, (column, colorbar_label, cmap) in zip(axes, panel_specs):
             plot_df = df[df[column] > 0].copy()
             max_value = max(float(df[column].max()), 1.0)
             if len(plot_df):
@@ -810,10 +810,17 @@ def render_community_decade_evolution_clean(
                     edgecolor="white",
                     linewidth=0.9,
                 )
-                colorbar = fig.colorbar(scatter, ax=ax, shrink=0.72, pad=0.018)
+                colorbar = fig.colorbar(
+                    scatter,
+                    ax=ax,
+                    orientation="horizontal",
+                    location="bottom",
+                    shrink=0.72,
+                    pad=0.16,
+                    fraction=0.08,
+                )
                 colorbar.set_label(colorbar_label, fontsize=9)
                 colorbar.ax.tick_params(labelsize=8)
-            ax.set_title(title, weight="bold")
             ax.set_xticks(range(len(decades)))
             ax.set_xticklabels(decades)
             ax.set_yticks(range(len(labels)))
