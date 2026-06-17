@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import base64
 import contextlib
+from datetime import date
 import hashlib
 from html import escape as html_escape
 import importlib.util
@@ -46,7 +47,7 @@ from PIL import Image
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PACKAGE_ROOT / "src"
-DEFAULT_INPUT = PACKAGE_ROOT / "data" / "output_final_with_source_revised_cleaned_authorfix.csv"
+DEFAULT_INPUT = PACKAGE_ROOT / "data" / "merged_author_2809_cleaned_v617.csv"
 DEFAULT_RUN_DIR = PACKAGE_ROOT / "outputs" / "network_analysis_run"
 DEFAULT_ESSAY_FIGURES = PACKAGE_ROOT / "outputs" / "essay_figures"
 DEFAULT_LATEST_FIGURES = PACKAGE_ROOT / "outputs" / "latest_network_figures"
@@ -112,10 +113,24 @@ def run_silent(func, *args, **kwargs):
         return func(*args, **kwargs)
 
 
+def is_non_author_token(value: Any) -> bool:
+    text = str(value or "").strip().strip(",;|&")
+    if not text:
+        return True
+    compact = re.sub(r"[^a-z]", "", text.lower())
+    return compact in {"etal", "anonymous", "unknown", "na", "nan"}
+
+
+def strip_et_al_suffix(value: Any) -> str:
+    text = str(value or "").strip()
+    text = re.sub(r"(?i)(?:[,;]?\s+|\s*)et\s*\.?\s*al\.?\s*$", "", text).strip()
+    return text.strip(",;|& ")
+
+
 class RevisedCSVNetworkBuilder(EPBNetworkBuilder):
     """Thin adapter from the revised final CSV to the original builder schema."""
 
-    def __init__(self, csv_path: Path, author_col: str = "authors_full_final"):
+    def __init__(self, csv_path: Path, author_col: str = "authors_stand"):
         self.csv_path = Path(csv_path)
         self.author_col = author_col
         self.author_mapping_file = None
@@ -136,13 +151,31 @@ class RevisedCSVNetworkBuilder(EPBNetworkBuilder):
         print(f"Loading revised paper data: {self.csv_path}")
         raw = pd.read_csv(self.csv_path)
 
-        required = {"title", "year", "authors", self.author_col}
+        required = {"title", "year"}
         missing = sorted(required - set(raw.columns))
         if missing:
             raise ValueError(f"Missing required columns in revised CSV: {missing}")
 
+        if self.author_col not in raw.columns:
+            for candidate in ("authors_stand", "authors_full_final", "authors"):
+                if candidate in raw.columns:
+                    print(
+                        f"Author column '{self.author_col}' not found; using '{candidate}' instead."
+                    )
+                    self.author_col = candidate
+                    break
+            else:
+                raise ValueError(
+                    "Missing author column. Expected one of: "
+                    "authors_full_final, authors_stand, authors"
+                )
+
+        raw_author_col = next(
+            (candidate for candidate in ("authors", "authors_epb", self.author_col) if candidate in raw.columns),
+            self.author_col,
+        )
         year_numeric = pd.to_numeric(raw["year"], errors="coerce")
-        author_values = raw[self.author_col].fillna(raw["authors"]).astype(str).str.strip()
+        author_values = raw[self.author_col].fillna(raw[raw_author_col]).astype(str).str.strip()
 
         papers = pd.DataFrame(
             {
@@ -174,6 +207,11 @@ class RevisedCSVNetworkBuilder(EPBNetworkBuilder):
         )
         print("   Decades:", ", ".join(sorted(papers["Decade"].dropna().unique())))
 
+    def _split_authors(self, author_string: str) -> list[str]:
+        author_string = strip_et_al_suffix(author_string)
+        authors = super()._split_authors(author_string)
+        return [author for author in authors if not is_non_author_token(author)]
+
     def build_collaboration_network(self, use_weighted: bool = True) -> nx.Graph:
         """Build the collaboration network with deterministic author ordering.
 
@@ -197,7 +235,9 @@ class RevisedCSVNetworkBuilder(EPBNetworkBuilder):
 
             authors = self._split_authors(row["Author"])
             standardized_authors = [self._standardize_author_name(author) for author in authors]
-            standardized_authors = sorted(set(standardized_authors))
+            standardized_authors = sorted(
+                {author for author in standardized_authors if not is_non_author_token(author)}
+            )
 
             paper_info = {
                 "title": row.get("Title", ""),
@@ -4547,7 +4587,7 @@ def build_summary(
     )[:20]
 
     return {
-        "run_date": "2026-06-09",
+        "run_date": date.today().isoformat(),
         "input_csv": str(input_csv),
         "input_sha256": file_sha256(input_csv),
         "paper_rows": len(raw),
@@ -4557,7 +4597,7 @@ def build_summary(
         "author_column": builder.author_col,
         "network_logic": {
             "edge_weight": "1 / number_of_unique_authors_on_paper",
-            "node": "standardized author name from authors_full_final",
+            "node": f"standardized author name from {builder.author_col}",
             "edge": "co-authorship pair within a paper",
             "lcc": "largest connected component of the author collaboration network",
             "path_analysis": "non-weighted shortest paths on the LCC",
@@ -5764,7 +5804,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--input-csv", default=str(DEFAULT_INPUT))
     parser.add_argument("--run-dir", default=str(DEFAULT_RUN_DIR))
-    parser.add_argument("--author-col", default="authors_full_final")
+    parser.add_argument("--author-col", default="authors_stand")
     parser.add_argument("--essay-figures-dir", default=str(DEFAULT_ESSAY_FIGURES))
     parser.add_argument("--latest-figures-dir", default=str(DEFAULT_LATEST_FIGURES))
     parser.add_argument("--update-essay", action="store_true")

@@ -5,7 +5,8 @@
 The code constructs an undirected weighted author collaboration network from the
 cleaned EPB publication CSV.
 
-- Nodes are standardized author names from `authors_full_final`.
+- Nodes are standardized author names from `authors_full_final` or
+  `authors_stand`, depending on the cleaned CSV version.
 - Edges represent co-authorship on at least one paper.
 - Single-authored papers add an author node but do not create an edge.
 

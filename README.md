@@ -34,7 +34,7 @@ BERTopic topic modeling workflow.
 
 | Manuscript analysis item | Code path | Main output inside `outputs/network_analysis_run/` |
 | --- | --- | --- |
-| Cleaned author data input | `data/output_final_with_source_revised_cleaned_authorfix.csv` | Input CSV, not stored in this repository |
+| Cleaned author data input | `data/merged_author_2809_cleaned_v617.csv` or another cleaned CSV passed with `--input-csv` | Input CSV, not stored in this repository |
 | Author collaboration network construction | `scripts/run_network_analysis.py`, `RevisedCSVNetworkBuilder.build_collaboration_network()` | `metrics/network_analysis_summary.json` |
 | Weighted edge definition and weighted degree analysis | `scripts/run_network_analysis.py`, `weighted_degree()`, `NetworkAnalyzer.analyze_weighted_degree_distribution_detailed()` | `figures/03-weighted-degree-analysis.png`, `tables/top_authors_by_weighted_degree.csv` |
 | Full network and LCC structural diagnostics | `scripts/run_network_analysis.py`, `create_author_network_structural_plot()` | `figures/08-structural-analysis.png` |
@@ -61,9 +61,10 @@ the full author collaboration network.
 
 ## Network Construction
 
-The input data are the standardized author names in `authors_full_final`. Each
-author is represented as a node. For each multi-authored paper, the code connects
-every pair of co-authors with an undirected edge.
+The input data are the standardized author names in `authors_full_final` or
+`authors_stand`, depending on the cleaned CSV version. Each author is represented
+as a node. For each multi-authored paper, the code connects every pair of
+co-authors with an undirected edge.
 
 For a paper `p` with `n_p` unique authors, each co-author pair on that paper
 receives a fractional contribution:
@@ -89,7 +90,7 @@ The script expects a cleaned EPB CSV with at least these columns:
 - `title`
 - `year`
 - `authors`
-- `authors_full_final`
+- `authors_full_final` or `authors_stand`
 - `doi`
 
 Optional quality-tracking columns are also read when present:
@@ -101,11 +102,13 @@ Optional quality-tracking columns are also read when present:
 By default, place the input CSV at:
 
 ```text
-data/output_final_with_source_revised_cleaned_authorfix.csv
+data/merged_author_2809_cleaned_v617.csv
 ```
 
 The CSV is excluded from version control by `.gitignore`. To run the code with a
-local data file elsewhere, pass the path with `--input-csv`.
+local data file elsewhere, pass the path with `--input-csv`. The author column
+can be selected with `--author-col`; if the requested author column is missing,
+the script falls back to `authors_stand`, `authors_full_final`, or `authors`.
 
 ## Installation
 
@@ -133,7 +136,17 @@ Run with an explicit input file and output directory:
 
 ```bash
 python scripts/run_network_analysis.py \
+  --input-csv data/merged_author_2809_cleaned_v617.csv \
+  --author-col authors_stand \
+  --run-dir outputs/network_analysis_run
+```
+
+Run the previous revised author-fix data version:
+
+```bash
+python scripts/run_network_analysis.py \
   --input-csv data/output_final_with_source_revised_cleaned_authorfix.csv \
+  --author-col authors_full_final \
   --run-dir outputs/network_analysis_run
 ```
 
@@ -142,7 +155,8 @@ ECharts and Cosmograph candidates:
 
 ```bash
 python scripts/run_network_analysis.py \
-  --input-csv data/output_final_with_source_revised_cleaned_authorfix.csv \
+  --input-csv data/merged_author_2809_cleaned_v617.csv \
+  --author-col authors_stand \
   --run-dir outputs/network_analysis_run \
   --disable-echarts-auto-render \
   --disable-cosmograph-candidate
@@ -180,5 +194,6 @@ Generated outputs are excluded from version control by default.
 - Path length and diameter are computed on the LCC.
 - Degree-based author summaries are computed on the full author collaboration
   network unless the output description explicitly states that the LCC is used.
-- The expected revised CSV for the manuscript contains 2,831 EPB papers covering
-  1974 through March 2026.
+- The June 17, 2026 manuscript data version contains 2,809 EPB papers covering
+  1974 through March 2026, with 7,222 author-paper instances and 5,319 unique
+  standardized authors.
